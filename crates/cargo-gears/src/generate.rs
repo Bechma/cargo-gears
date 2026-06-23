@@ -136,8 +136,8 @@ impl From<ModuleArgs> for cargo_gears_core::generate::module::ModuleParams {
 
 #[derive(Args)]
 pub struct GenerateConfigArgs {
-    /// Config template to use: dev, prod, or db
-    #[arg(short = 't', long)]
+    /// Config template to use: dev, prod, or db; use --template without a value to list available templates
+    #[arg(short = 't', long, num_args(0..=1), default_missing_value = "")]
     template: String,
     /// Application name for the output filename
     #[arg(long)]

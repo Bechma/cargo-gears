@@ -2,7 +2,10 @@ use anyhow::{Context, bail};
 use std::fs;
 use std::path::PathBuf;
 
+use super::templates;
+
 /// Built-in config template names
+const BUILTIN_CONFIG_TEMPLATES: &[&str] = &["dev", "prod", "db"];
 const BUILTIN_DEV: &str = "dev";
 const BUILTIN_PROD: &str = "prod";
 const BUILTIN_DB: &str = "db";
@@ -89,6 +92,15 @@ pub struct GenerateConfigParams {
 
 impl GenerateConfigParams {
     pub fn run(&self) -> anyhow::Result<()> {
+        if self.template.is_empty() {
+            let available: Vec<String> = BUILTIN_CONFIG_TEMPLATES
+                .iter()
+                .map(|s| (*s).to_owned())
+                .collect();
+            templates::print_template_list("config", &available);
+            return Ok(());
+        }
+
         let content = self.resolve_template_content()?;
         let output_path = self.resolve_output_path();
 
@@ -117,9 +129,12 @@ impl GenerateConfigParams {
             BUILTIN_PROD => Ok(PROD_TEMPLATE.to_owned()),
             BUILTIN_DB => Ok(DB_TEMPLATE.to_owned()),
             custom => {
-                bail!(
-                    "unknown config template '{custom}'. Available built-in templates: dev, prod, db"
-                );
+                let available: Vec<String> = BUILTIN_CONFIG_TEMPLATES
+                    .iter()
+                    .map(|s| (*s).to_owned())
+                    .collect();
+                templates::print_unknown_template_error("config", custom, &available);
+                std::process::exit(1);
             }
         }
     }
