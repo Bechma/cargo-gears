@@ -30,8 +30,8 @@ impl From<GenerateArgs> for cargo_gears_core::generate::GenerateParams {
 pub struct WorkspaceArgs {
     /// Path to initialize the project
     path: PathBuf,
-    /// Template name (defaults to "default")
-    #[arg(short = 't', long, default_value = "default")]
+    /// Template name (defaults to "default"); use --template without a value to list available templates
+    #[arg(short = 't', long, default_value = "default", num_args(0..=1), default_missing_value = "")]
     template: String,
     /// Name of the project, it's inferred from the path name if not specified
     #[arg(short = 'p', long)]

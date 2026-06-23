@@ -1,5 +1,6 @@
 pub mod config;
 pub mod module;
+pub mod templates;
 pub mod workspace;
 
 pub const DEFAULT_GIT_URL: &str = "git@github.com:Bechma/cf-template-rust.git";

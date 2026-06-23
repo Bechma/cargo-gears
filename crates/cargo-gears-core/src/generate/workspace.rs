@@ -2,6 +2,7 @@ use anyhow::{Context, bail};
 use cargo_generate::{GenerateArgs, TemplatePath, generate};
 use std::path::PathBuf;
 
+use super::templates;
 use super::{DEFAULT_BRANCH, DEFAULT_GIT_URL};
 
 /// Content of SKILL.md embedded at compile time
@@ -37,6 +38,20 @@ pub struct WorkspaceParams {
 
 impl WorkspaceParams {
     pub fn run(&self) -> anyhow::Result<()> {
+        if self.template.is_empty() {
+            let available = self.query_available_templates()?;
+            templates::print_template_list("workspace", &available);
+            return Ok(());
+        }
+
+        if self.template != "default" {
+            let available = self.query_available_templates()?;
+            if !available.iter().any(|t| t == &self.template) {
+                templates::print_unknown_template_error("workspace", &self.template, &available);
+                std::process::exit(1);
+            }
+        }
+
         if self.path.exists() && !self.path.is_dir() {
             bail!("path is not a directory");
         }
@@ -95,6 +110,22 @@ impl WorkspaceParams {
 
         println!("Project initialized at {}", self.path.display());
         Ok(())
+    }
+
+    fn query_available_templates(&self) -> anyhow::Result<Vec<String>> {
+        let mut available = vec!["default".to_owned()];
+
+        let workspace_templates = if let Some(local) = &self.local_path {
+            templates::list_local_templates(local, Some("Workspace"))?
+        } else {
+            templates::list_remote_templates(
+                self.git.as_deref(),
+                self.branch.as_deref(),
+                self.subfolder.as_deref().unwrap_or("Workspace"),
+            )?
+        };
+        available.extend(workspace_templates);
+        Ok(available)
     }
 
     fn resolve_template(&self) -> TemplatePath {

@@ -92,6 +92,36 @@ fn parses_generate_workspace_with_custom_template() {
 }
 
 #[test]
+fn parses_generate_workspace_with_empty_template() {
+    let command = parse_command(&[
+        "gears",
+        "generate",
+        "workspace",
+        "/tmp/cf-demo",
+        "--template",
+    ]);
+
+    assert_eq!(
+        command,
+        GearsCommand::Generate(GenerateParams {
+            command: GenerateCommand::Workspace(
+                cargo_gears_core::generate::workspace::WorkspaceParams {
+                    path: PathBuf::from("/tmp/cf-demo"),
+                    template: String::new(),
+                    name: None,
+                    verbose: false,
+                    local_path: None,
+                    git: None,
+                    subfolder: None,
+                    branch: None,
+                    r#override: false,
+                }
+            ),
+        })
+    );
+}
+
+#[test]
 fn parses_generate_module_into_core_command() {
     let command = parse_command(&[
         "gears",
