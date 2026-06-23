@@ -102,15 +102,16 @@ impl ModuleParams {
     }
 
     fn query_available_templates(&self) -> anyhow::Result<Vec<String>> {
-        if let Some(local) = &self.local_path {
-            templates::list_local_templates(local, Some("Modules"))
-        } else {
-            templates::list_remote_templates(
-                self.git.as_deref(),
-                self.branch.as_deref(),
-                self.subfolder.as_deref().unwrap_or("Modules"),
-            )
-        }
+        self.local_path.as_ref().map_or_else(
+            || {
+                templates::list_remote_templates(
+                    self.git.as_deref(),
+                    self.branch.as_deref(),
+                    self.subfolder.as_deref().unwrap_or("Modules"),
+                )
+            },
+            |local| templates::list_local_templates(local, Some("Modules")),
+        )
     }
 
     fn resolve_template(&self) -> TemplatePath {

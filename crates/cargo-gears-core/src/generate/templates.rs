@@ -71,10 +71,7 @@ pub fn list_local_templates(
     subfolder: Option<&str>,
 ) -> anyhow::Result<Vec<String>> {
     let base = Path::new(local_path);
-    let dir = match subfolder {
-        Some(sub) => base.join(sub),
-        None => base.to_path_buf(),
-    };
+    let dir = subfolder.map_or_else(|| base.to_path_buf(), |sub| base.join(sub));
 
     if !dir.is_dir() {
         bail!("template directory '{}' does not exist", dir.display());
@@ -85,10 +82,10 @@ pub fn list_local_templates(
         std::fs::read_dir(&dir).with_context(|| format!("can't read '{}'", dir.display()))?
     {
         let entry = entry?;
-        if entry.file_type()?.is_dir() {
-            if let Some(name) = entry.file_name().to_str() {
-                templates.push(name.to_owned());
-            }
+        if entry.file_type()?.is_dir()
+            && let Some(name) = entry.file_name().to_str()
+        {
+            templates.push(name.to_owned());
         }
     }
     templates.sort();

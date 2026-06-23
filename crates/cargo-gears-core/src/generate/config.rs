@@ -101,7 +101,7 @@ impl GenerateConfigParams {
             return Ok(());
         }
 
-        let content = self.resolve_template_content()?;
+        let content = self.resolve_template_content();
         let output_path = self.resolve_output_path();
 
         if let Some(parent) = output_path.parent() {
@@ -123,11 +123,11 @@ impl GenerateConfigParams {
         Ok(())
     }
 
-    fn resolve_template_content(&self) -> anyhow::Result<String> {
+    fn resolve_template_content(&self) -> String {
         match self.template.as_str() {
-            BUILTIN_DEV => Ok(DEV_TEMPLATE.to_owned()),
-            BUILTIN_PROD => Ok(PROD_TEMPLATE.to_owned()),
-            BUILTIN_DB => Ok(DB_TEMPLATE.to_owned()),
+            BUILTIN_DEV => DEV_TEMPLATE.to_owned(),
+            BUILTIN_PROD => PROD_TEMPLATE.to_owned(),
+            BUILTIN_DB => DB_TEMPLATE.to_owned(),
             custom => {
                 let available: Vec<String> = BUILTIN_CONFIG_TEMPLATES
                     .iter()
