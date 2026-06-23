@@ -101,7 +101,7 @@ impl GenerateConfigParams {
             return Ok(());
         }
 
-        let content = self.resolve_template_content();
+        let content = self.resolve_template_content()?;
         let output_path = self.resolve_output_path();
 
         if let Some(parent) = output_path.parent() {
@@ -123,18 +123,21 @@ impl GenerateConfigParams {
         Ok(())
     }
 
-    fn resolve_template_content(&self) -> String {
+    fn resolve_template_content(&self) -> anyhow::Result<String> {
         match self.template.as_str() {
-            BUILTIN_DEV => DEV_TEMPLATE.to_owned(),
-            BUILTIN_PROD => PROD_TEMPLATE.to_owned(),
-            BUILTIN_DB => DB_TEMPLATE.to_owned(),
-            custom => {
+            BUILTIN_DEV => Ok(DEV_TEMPLATE.to_owned()),
+            BUILTIN_PROD => Ok(PROD_TEMPLATE.to_owned()),
+            BUILTIN_DB => Ok(DB_TEMPLATE.to_owned()),
+            _ => {
                 let available: Vec<String> = BUILTIN_CONFIG_TEMPLATES
                     .iter()
                     .map(|s| (*s).to_owned())
                     .collect();
-                templates::print_unknown_template_error("config", custom, &available);
-                std::process::exit(1);
+                bail!(
+                    "unknown config template '{}'. Available templates: {}",
+                    self.template,
+                    available.join(", ")
+                )
             }
         }
     }

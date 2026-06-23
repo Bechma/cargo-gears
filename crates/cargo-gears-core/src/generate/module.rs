@@ -44,8 +44,11 @@ impl ModuleParams {
         {
             let available = self.query_available_templates()?;
             if !available.iter().any(|t| t == &self.template) {
-                templates::print_unknown_template_error("module", &self.template, &available);
-                std::process::exit(1);
+                bail!(
+                    "unknown module template '{}'. Available templates: {}",
+                    self.template,
+                    available.join(", ")
+                );
             }
         }
 

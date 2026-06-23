@@ -103,10 +103,3 @@ pub fn print_template_list(kind: &str, templates: &[String]) {
         println!("  - {name}");
     }
 }
-
-/// Print an "unknown template" error to stderr, then list available templates.
-pub fn print_unknown_template_error(kind: &str, name: &str, templates: &[String]) {
-    eprintln!("error: unknown {kind} template '{name}'");
-    eprintln!();
-    print_template_list(kind, templates);
-}
