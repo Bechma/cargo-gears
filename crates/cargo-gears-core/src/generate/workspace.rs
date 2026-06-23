@@ -47,8 +47,11 @@ impl WorkspaceParams {
         if self.template != "default" {
             let available = self.query_available_templates()?;
             if !available.iter().any(|t| t == &self.template) {
-                templates::print_unknown_template_error("workspace", &self.template, &available);
-                std::process::exit(1);
+                bail!(
+                    "unknown workspace template '{}'. Available templates: {}",
+                    self.template,
+                    available.join(", ")
+                );
             }
         }
 
