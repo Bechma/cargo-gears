@@ -83,8 +83,8 @@ impl From<WorkspaceArgs> for cargo_gears_core::generate::workspace::WorkspacePar
 
 #[derive(Args)]
 pub struct ModuleArgs {
-    /// Template name (e.g. background-worker, api-db-handler, api-gateway)
-    #[arg(short = 't', long)]
+    /// Template name (e.g. background-worker, api-db-handler, api-gateway); use --template without a value to list available templates
+    #[arg(short = 't', long, num_args(0..=1), default_missing_value = "")]
     template: String,
     /// Module name; defaults to the template name when absent
     #[arg(short = 'n', long)]

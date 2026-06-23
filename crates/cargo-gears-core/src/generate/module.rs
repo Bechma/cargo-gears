@@ -5,6 +5,7 @@ use semver::{Comparator, Op, Version, VersionReq};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use super::templates;
 use super::{DEFAULT_BRANCH, DEFAULT_GIT_URL};
 
 #[derive(Debug, Eq, PartialEq)]
@@ -34,6 +35,20 @@ struct StagedModuleWrite {
 
 impl ModuleParams {
     pub fn run(&self) -> anyhow::Result<()> {
+        if self.template.is_empty() {
+            let available = self.query_available_templates()?;
+            templates::print_template_list("module", &available);
+            return Ok(());
+        }
+
+        {
+            let available = self.query_available_templates()?;
+            if !available.iter().any(|t| t == &self.template) {
+                templates::print_unknown_template_error("module", &self.template, &available);
+                std::process::exit(1);
+            }
+        }
+
         ensure_modules_directory(&self.path)?;
 
         let generated_modules = self.generate_module()?;
@@ -84,6 +99,18 @@ impl ModuleParams {
         }
 
         Ok(generated)
+    }
+
+    fn query_available_templates(&self) -> anyhow::Result<Vec<String>> {
+        if let Some(local) = &self.local_path {
+            templates::list_local_templates(local, Some("Modules"))
+        } else {
+            templates::list_remote_templates(
+                self.git.as_deref(),
+                self.branch.as_deref(),
+                self.subfolder.as_deref().unwrap_or("Modules"),
+            )
+        }
     }
 
     fn resolve_template(&self) -> TemplatePath {

@@ -178,6 +178,27 @@ fn parses_generate_module_with_name() {
 }
 
 #[test]
+fn parses_generate_module_with_empty_template() {
+    let command = parse_command(&["gears", "generate", "module", "--template"]);
+
+    assert_eq!(
+        command,
+        GearsCommand::Generate(GenerateParams {
+            command: GenerateCommand::Module(cargo_gears_core::generate::module::ModuleParams {
+                template: String::new(),
+                name: None,
+                path: PathBuf::from("."),
+                verbose: false,
+                local_path: None,
+                git: None,
+                subfolder: None,
+                branch: None,
+            }),
+        })
+    );
+}
+
+#[test]
 fn parses_generate_config_into_core_command() {
     let command = parse_command(&[
         "gears",
