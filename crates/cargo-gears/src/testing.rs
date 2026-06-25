@@ -137,8 +137,12 @@ fn package_for_module(
             {
                 Some(local.package.clone().unwrap_or_else(|| local.name.clone()))
             }
-            GearRef::Remote(remote) if remote.name == module || remote.package == module => {
-                Some(remote.package.clone())
+            GearRef::Remote(remote)
+                if remote.name == module
+                    || remote.package.as_deref() == Some(module)
+                    || remote.resolved_package() == module =>
+            {
+                Some(remote.resolved_package())
             }
             _ => None,
         })
@@ -150,7 +154,9 @@ fn module_for_package(modules: &[GearRef], package: &str) -> Option<String> {
         GearRef::Local(local) if local.package.as_deref() == Some(package) => {
             Some(local.name.clone())
         }
-        GearRef::Remote(remote) if remote.package == package => Some(remote.name.clone()),
+        GearRef::Remote(remote) if remote.resolved_package() == package => {
+            Some(remote.name.clone())
+        }
         _ => None,
     })
 }
@@ -230,8 +236,8 @@ mod tests {
     fn sample_gears() -> Vec<GearRef> {
         vec![GearRef::Remote(GearRefRemote {
             name: "module-a".to_owned(),
-            version: semver::VersionReq::STAR,
-            package: "cf-module-a".to_owned(),
+            version: Some(semver::VersionReq::STAR),
+            package: Some("cf-module-a".to_owned()),
             registry: None,
             features: vec![],
             default_features: None,

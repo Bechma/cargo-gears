@@ -244,7 +244,7 @@ fn collect_manifest_system_modules(workspace_dir: &Path) -> anyhow::Result<BTree
             for module in &environment.gears {
                 if let GearRef::Remote(remote) = module {
                     modules.insert(remote.name.clone());
-                    modules.insert(remote.package.clone());
+                    modules.insert(remote.resolved_package());
                 }
             }
         }

@@ -93,6 +93,19 @@ pub const SYSTEM_REGISTRY_GEARS: &[SystemRegistryGear] = &[
     },
 ];
 
+/// Looks up the crate name for a gear by its module name.
+/// Falls back to `cf-gears-{name}` if the gear is not in the system registry.
+#[must_use]
+pub fn resolve_system_crate_name(gear_name: &str) -> String {
+    SYSTEM_REGISTRY_GEARS
+        .iter()
+        .find(|m| m.gear_name == gear_name)
+        .map_or_else(
+            || format!("cf-gears-{gear_name}"),
+            |m| m.crate_name.to_owned(),
+        )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

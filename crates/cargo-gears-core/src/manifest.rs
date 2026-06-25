@@ -341,8 +341,8 @@ fn resolve_dependencies(
             GearRef::Remote(remote) => (
                 remote.name.clone(),
                 ConfigModuleMetadata {
-                    package: Some(remote.package.clone()),
-                    version: version_req_to_metadata(&remote.version),
+                    package: Some(remote.resolved_package()),
+                    version: remote.version.as_ref().and_then(version_req_to_metadata),
                     features: remote.features.clone(),
                     default_features: remote.default_features,
                     ..Default::default()
@@ -499,9 +499,11 @@ pub struct GearRefLocal {
 #[serde(deny_unknown_fields)]
 pub struct GearRefRemote {
     pub name: String,
-    #[schemars(with = "String")]
-    pub version: VersionReq,
-    pub package: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schemars(with = "Option<String>")]
+    pub version: Option<VersionReq>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub package: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub registry: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -512,6 +514,18 @@ pub struct GearRefRemote {
         skip_serializing_if = "Option::is_none"
     )]
     pub default_features: Option<bool>,
+}
+
+impl GearRefRemote {
+    /// Resolves the crate package name. Uses the explicit `package` field if set,
+    /// otherwise looks up the system registry, falling back to `cf-gears-{name}`.
+    #[must_use]
+    pub fn resolved_package(&self) -> String {
+        if let Some(ref pkg) = self.package {
+            return pkg.clone();
+        }
+        crate::list::resolve_system_crate_name(&self.name)
+    }
 }
 
 /// Runtime policy for watch, FIPS, and OpenTelemetry.
@@ -866,6 +880,76 @@ gears = [{{ source = "remote", name = "module", package = "cf-module", version =
 
         assert_eq!(resolved.workspace_root, temp.path().join("workspace"));
         assert_eq!(resolved.generated_dir, absolute_generated_dir);
+    }
+
+    #[test]
+    fn remote_gear_with_name_only_derives_package_and_version() {
+        let temp = TempDir::new().unwrap();
+        temp.write(
+            "Gears.toml",
+            r#"
+[workspace]
+
+[apps.app.dev]
+config = "app-dev.yml"
+gears = [{ source = "remote", name = "api-gateway" }]
+"#,
+        );
+        temp.write("config/app-dev.yml", "server: {}\n");
+        let manifest = Manifest::load(&temp.path().join(DEFAULT_MANIFEST_FILE)).unwrap();
+
+        let resolved = manifest
+            .resolve(
+                temp.path(),
+                &temp.path().join(DEFAULT_MANIFEST_FILE),
+                "app",
+                "dev",
+                None,
+            )
+            .unwrap();
+
+        assert!(
+            resolved.dependencies.contains_key("cf_gears_api_gateway"),
+            "should derive package cf-gears-api-gateway from name api-gateway"
+        );
+        let dep = &resolved.dependencies["cf_gears_api_gateway"];
+        assert_eq!(dep.package.as_deref(), Some("cf-gears-api-gateway"));
+        assert!(
+            dep.version.is_none(),
+            "version should be None when not specified"
+        );
+    }
+
+    #[test]
+    fn remote_gear_with_explicit_package_uses_it() {
+        let temp = TempDir::new().unwrap();
+        temp.write(
+            "Gears.toml",
+            r#"
+[workspace]
+
+[apps.app.dev]
+config = "app-dev.yml"
+gears = [{ source = "remote", name = "my-gear", package = "custom-crate-name", version = "0.3" }]
+"#,
+        );
+        temp.write("config/app-dev.yml", "server: {}\n");
+        let manifest = Manifest::load(&temp.path().join(DEFAULT_MANIFEST_FILE)).unwrap();
+
+        let resolved = manifest
+            .resolve(
+                temp.path(),
+                &temp.path().join(DEFAULT_MANIFEST_FILE),
+                "app",
+                "dev",
+                None,
+            )
+            .unwrap();
+
+        assert!(resolved.dependencies.contains_key("custom_crate_name"));
+        let dep = &resolved.dependencies["custom_crate_name"];
+        assert_eq!(dep.package.as_deref(), Some("custom-crate-name"));
+        assert_eq!(dep.version.as_deref(), Some("^0.3"));
     }
 
     #[test]
