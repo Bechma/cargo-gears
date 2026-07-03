@@ -231,3 +231,31 @@ fn cargo_run_loop(
         return;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Regression test: before the fix, when `cargo_run_loop` couldn't spawn a
+    /// child, it blocked on `signal_rx.recv()` forever. Now it sends
+    /// `ChildExited` and returns.
+    #[test]
+    fn runner_sends_child_exited_on_spawn_failure() {
+        let (_signal_tx, signal_rx) = mpsc::channel::<RunSignal>();
+        let (event_tx, event_rx) = mpsc::channel::<WatchEvent>();
+
+        // Non-existent directory causes spawn() to fail.
+        let cargo_dir = PathBuf::from("/nonexistent/cargo/dir");
+        let config_path = PathBuf::from("/nonexistent/config.yml");
+
+        let handle = std::thread::spawn(move || {
+            cargo_run_loop(&cargo_dir, &config_path, &signal_rx, &event_tx);
+        });
+
+        let event = event_rx
+            .recv_timeout(Duration::from_secs(5))
+            .expect("should receive ChildExited within timeout");
+        assert!(matches!(event, WatchEvent::ChildExited));
+        handle.join().expect("runner thread should not panic");
+    }
+}
