@@ -910,7 +910,7 @@ Run workspace linting helpers from the selected workspace directory.
 Synopsis:
 
 ```bash
-cargo gears lint [--app <APP>] [--env <ENV>] [--manifest <Gears.toml>] [-p <PATH>] [--all] [--fmt] [--clippy] [--strict] [--dylint]
+cargo gears lint [--app <APP>] [--env <ENV>] [--manifest <Gears.toml>] [-p <PATH>] [--all] [--fmt] [--clippy] [--strict] [--dylint] [--list]
 ```
 
 Arguments:
@@ -924,6 +924,8 @@ Arguments:
 - **[`--strict`]** Turns Clippy warnings into errors; valid only when Clippy is selected explicitly or through `--all`
 - **[`--dylint`]** Runs the embedded `cargo-gears-lints` Dylint rules against the workspace rooted at the current or selected
   directory
+- **[`--list`]** Lists available lint rules instead of running them. When combined with `--dylint`, lists only the
+  embedded dylint rules. Does not require a manifest or workspace path.
 
 Behavior:
 
@@ -943,6 +945,8 @@ Behavior:
   listed rules are ignored for that lint run
 - **[toolchain bootstrap]** The build script ensures the lint package toolchain and components are installed when
   compiling embedded rules. Before running Dylint, the CLI ensures the embedded dylib toolchain is installed.
+- **[list mode]** `--list` prints available lints grouped by category and exits without running any checks.
+  `--list --dylint` prints only the embedded dylint rules. `--list` alone prints all lint suites plus the dylint rules.
 
 Examples:
 
@@ -964,6 +968,14 @@ cargo gears lint --app app1 --env dev --dylint
 
 ```bash
 cargo gears lint -p /tmp/cf-demo --app app1 --env dev --dylint
+```
+
+```bash
+cargo gears lint --list --dylint
+```
+
+```bash
+cargo gears lint --list
 ```
 
 Manifest Dylint skip example:
@@ -1150,7 +1162,7 @@ cargo gears config db rm <name> [-p <workspace>] -c <config>
 cargo gears ls modules [-p <workspace>] [--system] [--local] [--verbose] [--registry crates.io] [-f table|json]
 
 cargo gears src [-p <path>] [--version <version>] [--clean] [<query>]
-cargo gears lint [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--all] [--clippy] [--strict] [--dylint]
+cargo gears lint [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--all] [--clippy] [--strict] [--dylint] [--list]
 cargo gears tools --all
 cargo gears run [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--name <name>] [--watch]
 cargo gears build [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--name <name>]

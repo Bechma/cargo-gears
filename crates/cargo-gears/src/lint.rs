@@ -22,6 +22,10 @@ pub struct LintArgs {
     /// Run extra lint rules made for gears modules.
     #[arg(long)]
     dylint: bool,
+    /// List available lint rules instead of running them.
+    /// Combine with `--dylint` to list only dylint rules.
+    #[arg(long)]
+    list: bool,
 }
 
 impl LintArgs {
@@ -31,6 +35,19 @@ impl LintArgs {
 
     /// Resolve manifest + CLI overrides into a fully-resolved `LintParams`.
     pub fn resolve(self) -> anyhow::Result<cargo_gears_core::lint::LintParams> {
+        // `--list` short-circuits: print available lints and exit.
+        if self.list {
+            return Ok(cargo_gears_core::lint::LintParams {
+                workspace_root: std::path::PathBuf::new(),
+                fmt: false,
+                clippy: false,
+                strict: false,
+                dylint: self.dylint || self.all,
+                dylint_skip: Vec::new(),
+                list: true,
+            });
+        }
+
         let workspace_path =
             cargo_gears_core::common::resolve_workspace_path(self.workspace.path.as_deref())?;
 
@@ -66,6 +83,7 @@ impl LintArgs {
             strict: self.strict,
             dylint,
             dylint_skip,
+            list: false,
         })
     }
 }
@@ -212,5 +230,29 @@ mod tests {
         let resolved = parse(&temp, &[]).resolve().expect("resolve");
 
         assert_eq!(resolved.dylint_skip, vec!["some_lint", "other_lint"]);
+    }
+
+    #[test]
+    fn list_flag_skips_manifest_resolution() {
+        // --list should resolve without a manifest or workspace path.
+        let cli =
+            TestCli::try_parse_from(["gears", "--app", "a", "--env", "e", "--list", "--dylint"])
+                .expect("should parse");
+        let resolved = cli.lint.resolve().expect("resolve");
+
+        assert!(resolved.list);
+        assert!(resolved.dylint);
+        assert!(!resolved.fmt);
+        assert!(!resolved.clippy);
+    }
+
+    #[test]
+    fn list_without_dylint_sets_dylint_false() {
+        let cli = TestCli::try_parse_from(["gears", "--app", "a", "--env", "e", "--list"])
+            .expect("should parse");
+        let resolved = cli.lint.resolve().expect("resolve");
+
+        assert!(resolved.list);
+        assert!(!resolved.dylint);
     }
 }
