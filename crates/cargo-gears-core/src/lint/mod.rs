@@ -36,13 +36,207 @@ pub struct LintParams {
     pub dylint: bool,
     /// Lint names to skip when running dylint.
     pub dylint_skip: Vec<String>,
+    /// List available lints instead of running them.
+    pub list: bool,
 }
+
+/// Metadata for a single embedded dylint rule.
+#[derive(Debug, Clone)]
+pub struct DylintLintInfo {
+    /// Lint code, e.g. "DE0101".
+    pub code: &'static str,
+    /// Rustc-level lint name, e.g. `de0101_no_serde_in_contract`.
+    pub name: &'static str,
+    /// Category grouping, e.g. "Domain Layer".
+    pub category: &'static str,
+    /// One-line description of the lint.
+    pub description: &'static str,
+    /// Default lint level ("deny" or "warn").
+    pub default_level: &'static str,
+}
+
+/// All embedded dylint rules, sorted by code.
+pub static DYLINT_LINTS: &[DylintLintInfo] = &[
+    DylintLintInfo {
+        code: "DE0101",
+        name: "de0101_no_serde_in_contract",
+        category: "Domain Layer",
+        description: "domain models should not have serde derives",
+        default_level: "deny",
+    },
+    DylintLintInfo {
+        code: "DE0102",
+        name: "de0102_no_toschema_in_contract",
+        category: "Domain Layer",
+        description: "domain models should not have ToSchema derive",
+        default_level: "deny",
+    },
+    DylintLintInfo {
+        code: "DE0104",
+        name: "de0104_no_api_dto_in_contract",
+        category: "Domain Layer",
+        description: "domain models should not use api_dto macro",
+        default_level: "deny",
+    },
+    DylintLintInfo {
+        code: "DE0201",
+        name: "de0201_dtos_only_in_api_rest",
+        category: "API Layer",
+        description: "DTO types should only be defined in */api/rest/* files",
+        default_level: "deny",
+    },
+    DylintLintInfo {
+        code: "DE0202",
+        name: "de0202_dtos_not_referenced_outside_api",
+        category: "API Layer",
+        description: "DTO types should not be imported outside of api layer",
+        default_level: "deny",
+    },
+    DylintLintInfo {
+        code: "DE0203",
+        name: "de0203_dtos_must_use_api_dto",
+        category: "API Layer",
+        description: "DTO types must use the api_dto macro",
+        default_level: "deny",
+    },
+    DylintLintInfo {
+        code: "DE0204",
+        name: "de0204_dtos_must_have_toschema_derive",
+        category: "API Layer",
+        description: "DTO types must derive ToSchema for OpenAPI documentation",
+        default_level: "deny",
+    },
+    DylintLintInfo {
+        code: "DE0301",
+        name: "de0301_no_infra_in_domain",
+        category: "Domain Boundaries",
+        description: "domain modules should not import infrastructure dependencies",
+        default_level: "deny",
+    },
+    DylintLintInfo {
+        code: "DE0308",
+        name: "de0308_no_http_in_domain",
+        category: "Domain Boundaries",
+        description: "domain modules should not reference HTTP types or status codes",
+        default_level: "deny",
+    },
+    DylintLintInfo {
+        code: "DE0503",
+        name: "de0503_plugin_client_suffix",
+        category: "Client Layer",
+        description: "plugin client traits should use *PluginClient suffix",
+        default_level: "deny",
+    },
+    DylintLintInfo {
+        code: "DE0504",
+        name: "de0504_client_versioning",
+        category: "Client Layer",
+        description: "Client/PluginClient traits must have version suffixes (V1, V2, ...)",
+        default_level: "deny",
+    },
+    DylintLintInfo {
+        code: "DE0706",
+        name: "de0706_no_direct_sqlx",
+        category: "Security",
+        description: "direct sqlx usage is prohibited; use Sea-ORM or SecORM instead",
+        default_level: "deny",
+    },
+    DylintLintInfo {
+        code: "DE0707",
+        name: "de0707_drop_zeroize",
+        category: "Security",
+        description: "manual byte-zeroing in Drop may be optimized away; use zeroize crate",
+        default_level: "deny",
+    },
+    DylintLintInfo {
+        code: "DE0708",
+        name: "de0708_no_non_fips_hasher",
+        category: "Security",
+        description: "non-FIPS-validated hasher import outside allow-list",
+        default_level: "deny",
+    },
+    DylintLintInfo {
+        code: "DE0801",
+        name: "de0801_api_endpoint_version",
+        category: "REST API Conventions",
+        description: "API endpoints must follow /{service-name}/v{N}/{resource} format",
+        default_level: "deny",
+    },
+    DylintLintInfo {
+        code: "DE0802",
+        name: "de0802_use_odata_ext",
+        category: "REST API Conventions",
+        description: "use OperationBuilderODataExt instead of .query_param() for OData",
+        default_level: "deny",
+    },
+    DylintLintInfo {
+        code: "DE0803",
+        name: "de0803_api_snake_case",
+        category: "REST API Conventions",
+        description: "API DTOs must use snake_case in serde rename attributes",
+        default_level: "deny",
+    },
+    DylintLintInfo {
+        code: "DE0901",
+        name: "de0901_gts_string_pattern",
+        category: "GTS Layer",
+        description: "invalid GTS string pattern",
+        default_level: "deny",
+    },
+    DylintLintInfo {
+        code: "DE0902",
+        name: "de0902_no_schema_for_on_gts_structs",
+        category: "GTS Layer",
+        description: "GTS structs must use gts_schema_with_refs_as_string() instead of schema_for!()",
+        default_level: "deny",
+    },
+    DylintLintInfo {
+        code: "DE1101",
+        name: "de1101_tests_in_separate_files",
+        category: "Testing",
+        description: "tests must live in separate files, not inline in production files",
+        default_level: "deny",
+    },
+    DylintLintInfo {
+        code: "DE1201",
+        name: "de1201_docs_rs_all_features",
+        category: "Documentation",
+        description: "crates with features must set docs.rs all-features metadata",
+        default_level: "deny",
+    },
+    DylintLintInfo {
+        code: "DE1301",
+        name: "de1301_no_print_macros",
+        category: "Common Patterns",
+        description: "print/debug macros are forbidden in production code",
+        default_level: "deny",
+    },
+    DylintLintInfo {
+        code: "DE1302",
+        name: "de1302_error_from_to_string",
+        category: "Common Patterns",
+        description: "calling .to_string() in From<XxxError> impl destroys the error chain",
+        default_level: "deny",
+    },
+    DylintLintInfo {
+        code: "DE1303",
+        name: "de1303_no_primitive_type_alias",
+        category: "Common Patterns",
+        description: "pub type X = primitive is a transparent alias; use a newtype",
+        default_level: "deny",
+    },
+];
 
 #[cfg(feature = "dylint-rules")]
 include!(concat!(env!("OUT_DIR"), "/generated_libs.rs"));
 
 impl LintParams {
     pub fn run(&self) -> Result<()> {
+        if self.list {
+            list_lints(self.dylint);
+            return Ok(());
+        }
+
         if self.fmt {
             run_fmt(&self.workspace_root)?;
         }
@@ -56,6 +250,36 @@ impl LintParams {
         }
 
         Ok(())
+    }
+}
+
+fn list_lints(dylint_only: bool) {
+    if !dylint_only {
+        println!("Built-in lint suites:");
+        println!("  fmt     Run `cargo fmt --check --all`");
+        println!("  clippy  Run `cargo clippy --workspace --all-targets`");
+        println!("  dylint  Run embedded architectural lint rules (see below)");
+        println!();
+    }
+
+    println!("Embedded dylint rules ({} total):\n", DYLINT_LINTS.len());
+
+    // Group by category for readability.
+    let mut current_category = "";
+    for lint in DYLINT_LINTS {
+        if lint.category != current_category {
+            if !current_category.is_empty() {
+                println!();
+            }
+            println!("  {}:", lint.category);
+            current_category = lint.category;
+        }
+        println!(
+            "    {code:<8} {name:<45} {desc}",
+            code = lint.code,
+            name = lint.name,
+            desc = lint.description,
+        );
     }
 }
 
@@ -212,6 +436,8 @@ fn run_dylint(_workspace_path: &Path, _skipped_lints: &[String]) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use super::DYLINT_LINTS;
+
     #[cfg(feature = "dylint-rules")]
     #[test]
     fn dylint_skip_list_is_converted_to_cargo_rustflags_config() {
@@ -229,5 +455,36 @@ mod tests {
                     .to_owned(),
             ]
         );
+    }
+
+    #[test]
+    fn dylint_lints_registry_is_sorted_by_code() {
+        for pair in DYLINT_LINTS.windows(2) {
+            assert!(
+                pair[0].code < pair[1].code,
+                "DYLINT_LINTS not sorted: {} should come before {}",
+                pair[0].code,
+                pair[1].code,
+            );
+        }
+    }
+
+    #[test]
+    fn dylint_lints_names_match_codes() {
+        for lint in DYLINT_LINTS {
+            let lower_code = lint.code.to_lowercase();
+            assert!(
+                lint.name.starts_with(&lower_code),
+                "lint name `{}` should start with its lowercase code `{}`",
+                lint.name,
+                lower_code,
+            );
+        }
+    }
+
+    #[test]
+    fn list_lints_does_not_panic() {
+        super::list_lints(true);
+        super::list_lints(false);
     }
 }
