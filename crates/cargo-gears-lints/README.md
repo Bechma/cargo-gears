@@ -118,6 +118,231 @@ cargo gears lint --all
 
 See [docs/README.md](docs/README.md) for links to each lint's detailed documentation.
 
+## Adding a New Lint Rule
+
+This section walks through the end-to-end process of authoring a new architecture lint, testing it locally, and getting it adopted in a target workspace (e.g. `gears-rust`).
+
+### 1. Choose a rule ID and category
+
+Rules follow the `DEccnn` numbering scheme, where `cc` is the category and `nn` is the rule number within that category. Pick the next available number in an existing category, or create a new category if none fits.
+
+Existing categories:
+
+| Prefix | Category | Source directory |
+|--------|----------|-----------------|
+| DE01xx | Domain layer (serde/schema) | `de01_domain_layer/` |
+| DE02xx | API layer (DTOs) | `de02_api_layer/` |
+| DE03xx | Domain layer (infra/HTTP) | `de03_domain_layer/` |
+| DE05xx | Client layer | `de05_client_layer/` |
+| DE07xx | Security | `de07_security/` |
+| DE08xx | REST API conventions | `de08_rest_api_conventions/` |
+| DE09xx | GTS layer | `de09_gts_layer/` |
+| DE11xx | Testing | `de11_testing/` |
+| DE12xx | Documentation | `de12_documentation/` |
+| DE13xx | Common patterns | `de13_common_patterns/` |
+
+Example: a new common-patterns rule would be **DE1304** in `de13_common_patterns/`.
+
+### 2. Create the implementation file
+
+Create `src/<category>/de<ccnn>_<snake_name>.rs`. The implementation uses the `rustc` lint infrastructure via `dylint_linting`. Choose the appropriate lint pass:
+
+| Pass | When to use |
+|------|-------------|
+| `EarlyLintPass` (pre-expansion) | AST-level checks before macro expansion (derive attrs, macro calls) |
+| `EarlyLintPass` | AST-level checks after macro expansion (use imports, struct fields) |
+| `LateLintPass` | Type-resolved checks (trait impls, type information, cross-crate resolution) |
+
+A minimal skeleton:
+
+```rust
+extern crate rustc_ast;
+extern crate rustc_span;
+
+use rustc_ast::Item;
+use rustc_lint::{EarlyContext, EarlyLintPass, LintContext};
+
+dylint_linting::declare_pre_expansion_lint! {
+    /// DE1304: Short description of the rule
+    ///
+    /// Longer explanation of what it enforces and why.
+    #[doc = include_str!("../../docs/de13_common_patterns/de1304_your_lint_name/README.md")]
+    pub DE1304_YOUR_LINT_NAME,
+    Deny,
+    "short diagnostic message (DE1304)"
+}
+
+impl EarlyLintPass for De1304YourLintName {
+    fn check_item(&mut self, cx: &EarlyContext<'_>, item: &Item) {
+        // Your lint logic here.
+        // Use helpers from lint_utils.rs for path checks, filename extraction, etc.
+    }
+}
+```
+
+Use `Deny` severity for rules that should fail the build. Use `Warn` only if the rule is advisory.
+
+The `include_str!` directive embeds the per-lint README into `rustc` documentation, so `cargo doc` includes it.
+
+### 3. Register the lint in `lib.rs`
+
+Three edits are needed in `src/lib.rs`:
+
+**a)** Add the module declaration in the appropriate category block:
+
+```rust
+mod de13_common_patterns {
+    // ... existing lints ...
+    pub(crate) mod de1304_your_lint_name;
+}
+```
+
+**b)** Register the lint constant in `register_lints`:
+
+```rust
+lint_store.register_lints(&[
+    // ... existing lints ...
+    de13_common_patterns::de1304_your_lint_name::DE1304_YOUR_LINT_NAME,
+]);
+```
+
+**c)** Register the lint pass (match the pass type you chose in step 2):
+
+```rust
+// Pre-expansion:
+lint_store.register_pre_expansion_pass(|| {
+    Box::new(de13_common_patterns::de1304_your_lint_name::De1304YourLintName)
+});
+
+// Early pass:
+lint_store.register_early_pass(|| {
+    Box::new(de13_common_patterns::de1304_your_lint_name::De1304YourLintName)
+});
+
+// Late pass:
+lint_store.register_late_pass(|_| {
+    Box::new(de13_common_patterns::de1304_your_lint_name::De1304YourLintName)
+});
+```
+
+### 4. Write per-lint documentation
+
+Create `docs/<category>/de<ccnn>_<snake_name>/README.md` with:
+
+- **Rule** — what the lint checks
+- **Rationale** — why the rule exists
+- **Allowed Exceptions** — any path/context exceptions
+- **Examples** — forbidden and allowed code snippets
+- **Guidance** — how to fix violations or suppress the lint
+
+Then add a link in `docs/README.md`:
+
+```markdown
+- [DE1304 - Your Lint Name](de13_common_patterns/de1304_your_lint_name/README.md)
+```
+
+### 5. Add UI tests
+
+Create a directory `tests/ui/de<ccnn>_<snake_name>/` with test fixtures. Each fixture is a pair:
+
+- **`<case>.rs`** — Rust source that should trigger (or not trigger) the lint
+- **`<case>.stderr`** — expected compiler diagnostics (empty for cases that should pass cleanly)
+
+Naming conventions:
+- `forbidden_<scenario>.rs` / `bad_<scenario>.rs` — code that should trigger the lint
+- `allowed_<scenario>.rs` / `good_<scenario>.rs` — code that should pass
+
+Example forbidden case (`forbidden_example.rs`):
+
+```rust
+// compile-flags: --crate-type=lib
+
+pub fn example() {
+    // Should trigger DE1304
+    offending_code_here();
+}
+```
+
+For lints that use file-path-based detection (e.g. checking if code is in `/domain/`), use a `// simulated_dir=` comment on the first line to simulate the path in UI tests:
+
+```rust
+// simulated_dir=modules/my-gear/src/domain/model.rs
+// compile-flags: --crate-type=lib
+
+pub struct Foo;
+```
+
+To generate the initial `.stderr` files, run the tests and let them fail — the test harness prints the actual compiler output, which you can capture into the `.stderr` file. Alternatively, run with `DYLINT_BLESS=1` to auto-update `.stderr` files.
+
+### 6. Register examples in `Cargo.toml`
+
+Each UI test fixture must be registered as a `[[example]]` in `Cargo.toml` so that `dylint_testing::ui_test_examples` discovers it:
+
+```toml
+[[example]]
+name = "de1304_your_lint_name-forbidden_example"
+path = "tests/ui/de1304_your_lint_name/forbidden_example.rs"
+
+[[example]]
+name = "de1304_your_lint_name-allowed_example"
+path = "tests/ui/de1304_your_lint_name/allowed_example.rs"
+```
+
+The name format is `<lint_id>-<fixture_name>`. For lints that run in SDK crates, append `-sdk` to the name (the test harness uses the `-sdk` suffix to set `--crate-name` accordingly).
+
+### 7. Run tests
+
+```bash
+# Run all lint UI tests
+cd crates/cargo-gears-lints
+cargo test
+
+# Auto-update .stderr files after intentional diagnostic changes
+DYLINT_BLESS=1 cargo test
+```
+
+### 8. Test against a target workspace
+
+Before publishing, verify the new lint works against a real codebase:
+
+```bash
+# Build cargo-gears from source with the new lint
+cargo run -p cargo-gears -- gears lint --dylint -p /path/to/gears-rust
+```
+
+This lets you validate that:
+- The lint triggers on real violations (if any exist)
+- Existing code that should pass is not flagged
+- Path-based detection works with the target workspace's directory layout
+
+### 9. Publish and adopt
+
+Once the lint is merged and a new version of `cargo-gears` is published:
+
+1. In the **target workspace** (e.g. `gears-rust`), update `cargo-gears`:
+   ```bash
+   cargo install cargo-gears
+   ```
+2. Run `cargo gears lint --dylint` (or `make dylint`) to check for violations.
+3. Fix violations, or temporarily add the rule to the `skip` list in `Gears.toml` and track clean-up:
+   ```toml
+   [apps.gears-rust.dev.lint.dylint]
+   skip = ["de1304_your_lint_name"]
+   ```
+4. If the rule has configurable parameters (allow-lists, thresholds), configure them in the target workspace's `dylint.toml`.
+
+### Checklist
+
+- [ ] Implementation file in `src/<category>/`
+- [ ] Lint and pass registered in `lib.rs`
+- [ ] Per-lint README in `docs/<category>/<lint>/`
+- [ ] Link added to `docs/README.md`
+- [ ] UI test fixtures in `tests/ui/<lint>/` (forbidden + allowed cases)
+- [ ] Examples registered in `Cargo.toml`
+- [ ] `cargo test` passes
+- [ ] Tested against a real workspace
+- [ ] Crate README table updated (this file)
+
 ## Troubleshooting
 
 **Build fails for lint package** — Dylint rules require a specific nightly toolchain
