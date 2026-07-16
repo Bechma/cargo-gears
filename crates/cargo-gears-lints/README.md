@@ -88,17 +88,14 @@ crates/cargo-gears-lints/
 │   ├── lib.rs                # Registers all lints in one dylint library
 │   ├── lint_utils.rs         # Shared helpers
 │   ├── de01_domain_layer/    # Lint implementations grouped by category
-│   │   ├── de0101_....rs
+│   │   ├── de0101_no_serde_in_domain.rs
+│   │   ├── de0101_no_serde_in_domain/
+│   │   │   └── README.md     # Per-lint documentation, colocated with source
 │   │   └── ...
 │   ├── de02_api_layer/
 │   └── ...
-├── docs/                     # Per-lint documentation, grouped by category
-│   ├── README.md             # Index linking to each lint README
-│   ├── de01_domain_layer/
-│   │   ├── de0101_.../
-│   │   │   └── README.md
-│   │   └── ...
-│   └── ...
+├── docs/
+│   └── README.md             # Index linking to each lint README
 ├── tests/
 │   └── ui/
 │       ├── de0101_.../       # UI test fixtures (.rs + .stderr)
@@ -107,7 +104,7 @@ crates/cargo-gears-lints/
 └── rust-toolchain.toml       # Nightly channel for dylint
 ```
 
-Each lint implementation lives in `src/<category>/<lint>.rs`. Per-lint documentation lives in `docs/<category>/<lint>/README.md`, with [docs/README.md](docs/README.md) as the index. UI fixtures live in `tests/ui/<lint>/`: `.rs` files contain code that should trigger (or not) the lint, and `.stderr` files contain the expected compiler diagnostics.
+Each lint implementation lives in `src/<category>/<lint>.rs`. Per-lint documentation lives in `src/<category>/<lint>/README.md`, colocated with the source for discoverability. [docs/README.md](docs/README.md) serves as the index linking to each lint's README. UI fixtures live in `tests/ui/<lint>/`: `.rs` files contain code that should trigger (or not) the lint, and `.stderr` files contain the expected compiler diagnostics.
 
 ## Usage
 
@@ -166,7 +163,7 @@ dylint_linting::declare_pre_expansion_lint! {
     /// DE1304: Short description of the rule
     ///
     /// Longer explanation of what it enforces and why.
-    #[doc = include_str!("../../docs/de13_common_patterns/de1304_your_lint_name/README.md")]
+    #[doc = include_str!("de1304_your_lint_name/README.md")]
     pub DE1304_YOUR_LINT_NAME,
     Deny,
     "short diagnostic message (DE1304)"
@@ -227,7 +224,7 @@ lint_store.register_late_pass(|_| {
 
 ### 4. Write per-lint documentation
 
-Create `docs/<category>/de<ccnn>_<snake_name>/README.md` with:
+Create `src/<category>/de<ccnn>_<snake_name>/README.md` — colocated with the implementation file for discoverability. Include:
 
 - **Rule** — what the lint checks
 - **Rationale** — why the rule exists
@@ -235,10 +232,10 @@ Create `docs/<category>/de<ccnn>_<snake_name>/README.md` with:
 - **Examples** — forbidden and allowed code snippets
 - **Guidance** — how to fix violations or suppress the lint
 
-Then add a link in `docs/README.md`:
+Then add a link in `docs/README.md` (the lint index):
 
 ```markdown
-- [DE1304 - Your Lint Name](de13_common_patterns/de1304_your_lint_name/README.md)
+- [DE1304 - Your Lint Name](../src/de13_common_patterns/de1304_your_lint_name/README.md)
 ```
 
 ### 5. Add UI tests
@@ -335,7 +332,7 @@ Once the lint is merged and a new version of `cargo-gears` is published:
 
 - [ ] Implementation file in `src/<category>/`
 - [ ] Lint and pass registered in `lib.rs`
-- [ ] Per-lint README in `docs/<category>/<lint>/`
+- [ ] Per-lint README in `src/<category>/<lint>/`
 - [ ] Link added to `docs/README.md`
 - [ ] UI test fixtures in `tests/ui/<lint>/` (forbidden + allowed cases)
 - [ ] Examples registered in `Cargo.toml`
