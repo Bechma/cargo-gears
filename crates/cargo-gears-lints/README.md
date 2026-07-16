@@ -109,9 +109,11 @@ Each lint implementation lives in `src/<category>/<lint>.rs`. Per-lint documenta
 ## Usage
 
 ```bash
-cargo gears lint --dylint
-cargo gears lint --all
+cargo gears lint --dylint          # run only the architecture lints (this crate)
+cargo gears lint --all             # run all lint stages: fmt + clippy + dylint
 ```
+
+Individual stages can also be selected with `--fmt` or `--clippy`.
 
 See [docs/README.md](docs/README.md) for links to each lint's detailed documentation.
 
