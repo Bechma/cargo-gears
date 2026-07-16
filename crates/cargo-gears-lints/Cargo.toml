@@ -390,6 +390,26 @@ name = "de0902_no_schema_for_on_gts_structs-non_gts_struct_schema_for"
 path = "tests/ui/de0902_no_schema_for_on_gts_structs/non_gts_struct_schema_for.rs"
 
 [[example]]
+name = "de0904_no_hardcoded_gts_prefix-hardcoded_prefix"
+path = "tests/ui/de0904_no_hardcoded_gts_prefix/hardcoded_prefix.rs"
+
+[[example]]
+name = "de0904_no_hardcoded_gts_prefix-gts_id_marker"
+path = "tests/ui/de0904_no_hardcoded_gts_prefix/gts_id_marker.rs"
+
+[[example]]
+name = "de0904_no_hardcoded_gts_prefix-macro_markers"
+path = "tests/ui/de0904_no_hardcoded_gts_prefix/macro_markers.rs"
+
+[[example]]
+name = "de0904_no_hardcoded_gts_prefix-hardcoded_prefix_in_macros"
+path = "tests/ui/de0904_no_hardcoded_gts_prefix/hardcoded_prefix_in_macros.rs"
+
+[[example]]
+name = "de0904_no_hardcoded_gts_prefix-hardcoded_prefix_in_attributes"
+path = "tests/ui/de0904_no_hardcoded_gts_prefix/hardcoded_prefix_in_attributes.rs"
+
+[[example]]
 name = "de1101_tests_in_separate_files-resource_group_inline_case"
 path = "tests/ui/de1101_tests_in_separate_files/resource_group_inline_case.rs"
 

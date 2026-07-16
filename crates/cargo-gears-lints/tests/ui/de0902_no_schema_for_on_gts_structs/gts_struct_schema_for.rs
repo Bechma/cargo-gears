@@ -1,4 +1,4 @@
-//! Test case: schema_for! on GTS-wrapped struct should trigger DE0902
+#![allow(unknown_lints, de0904_no_hardcoded_gts_prefix)]
 
 use gts_macros::struct_to_gts_schema;
 

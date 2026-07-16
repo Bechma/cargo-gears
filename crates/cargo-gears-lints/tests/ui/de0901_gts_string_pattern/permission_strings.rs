@@ -1,4 +1,4 @@
-//! Test file for permission strings with colon-separated parts
+#![allow(unknown_lints, de0904_no_hardcoded_gts_prefix)]
 //! Security claims can contain any GTS format: type schemas, instance segments, or wildcards
 //! These should NOT trigger the lint because they are in permission string context
 
