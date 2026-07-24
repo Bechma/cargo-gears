@@ -41,7 +41,7 @@ dylint_linting::declare_early_lint! {
     /// use sea_orm::EntityTrait;
     /// UserEntity::find().secure().scope_with(&scope).all(conn).await?;
     /// ```
-    #[doc = include_str!("../../docs/de07_security/de0706_no_direct_sqlx/README.md")]
+    #[doc = include_str!("de0706_no_direct_sqlx/README.md")]
     pub DE0706_NO_DIRECT_SQLX,
     Deny,
     "direct sqlx usage is prohibited; use Sea-ORM or SecORM instead (DE0706)"

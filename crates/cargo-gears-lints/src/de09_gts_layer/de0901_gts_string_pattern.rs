@@ -72,7 +72,7 @@ dylint_linting::impl_pre_expansion_lint! {
     /// 3. GTS-looking string literals - must be valid GTS entity id
     ///
     /// Uses `GtsOps::parse_id()` from the GTS library for validation.
-    #[doc = include_str!("../../docs/de09_gts_layer/de0901_gts_string_pattern/README.md")]
+    #[doc = include_str!("de0901_gts_string_pattern/README.md")]
     pub DE0901_GTS_STRING_PATTERN,
     Deny,
     "invalid GTS string pattern (DE0901)",
