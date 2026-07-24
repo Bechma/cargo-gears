@@ -86,7 +86,7 @@ dylint_linting::impl_early_lint! {
     /// Use instead: route the operation through the validated crypto provider,
     /// or add the file to `hasher_allowed_paths` if the usage is reviewed and
     /// tracked against a FIPS milestone.
-    #[doc = include_str!("../../docs/de07_security/de0708_no_non_fips_hasher/README.md")]
+    #[doc = include_str!("de0708_no_non_fips_hasher/README.md")]
     pub DE0708_NO_NON_FIPS_HASHER,
     Deny,
     "non-FIPS-validated hasher import (sha2/sha1/md5) outside allow-list (DE0708)",
