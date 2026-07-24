@@ -39,6 +39,7 @@ Index of per-lint documentation for `cargo-gears-lints`. Each lint's README live
 
 - [DE0901 - GTS String Pattern](../src/de09_gts_layer/de0901_gts_string_pattern/README.md)
 - [DE0902 - No Schema For On GTS Structs](../src/de09_gts_layer/de0902_no_schema_for_on_gts_structs/README.md)
+- [DE0904 - No Hard-Coded GTS Prefix](../src/de09_gts_layer/de0904_no_hardcoded_gts_prefix/README.md)
 
 ## DE12xx - Documentation
 

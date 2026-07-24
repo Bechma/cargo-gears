@@ -59,6 +59,7 @@ These rules are compiled by `cargo-gears-core`'s build script when the CLI is bu
 |------|------|------------------|
 | DE0901 | GTS String Pattern | GTS identifiers must be valid; vendor allowlist configurable via `dylint.toml` |
 | DE0902 | No `schema_for!` on GTS | GTS structs must use `gts_schema_with_refs_as_string()`, not `schema_for!` |
+| DE0904 | No Hard-Coded GTS Prefix | GTS IDs must use `gts_id!("<suffix>")`, not a literal `gts.` prefix |
 
 ### DE12xx — Documentation
 

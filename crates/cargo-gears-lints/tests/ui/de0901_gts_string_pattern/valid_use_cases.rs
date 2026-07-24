@@ -1,3 +1,5 @@
+#![allow(unknown_lints, de0904_no_hardcoded_gts_prefix)]
+
 // Test file for valid GTS strings and gts-macros annotations - should not trigger DE0901
 
 use gts::{GtsInstanceId, GtsWildcard};
