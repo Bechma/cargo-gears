@@ -51,6 +51,7 @@ thiserror = "2.0"
 tokio = { version = "1.44", features = ["macros", "rt"] }
 utoipa = "5.2"
 uuid = "1.0"
+fixture-macros = { path = "tests/fixture-macros" }
 
 [package.metadata.rust-analyzer]
 rustc_private = true
@@ -160,6 +161,18 @@ path = "tests/ui/de0308_no_http_in_domain/nested_generic_http_type.rs"
 [[example]]
 name = "de0308_no_http_in_domain-trait_bounds_http"
 path = "tests/ui/de0308_no_http_in_domain/trait_bounds_http.rs"
+
+[[example]]
+name = "de0309_must_have_domain_model-missing_domain_model"
+path = "tests/ui/de0309_must_have_domain_model/missing_domain_model.rs"
+
+[[example]]
+name = "de0309_must_have_domain_model-has_domain_model"
+path = "tests/ui/de0309_must_have_domain_model/has_domain_model.rs"
+
+[[example]]
+name = "de0309_must_have_domain_model-private_types_exempt"
+path = "tests/ui/de0309_must_have_domain_model/private_types_exempt.rs"
 
 [[example]]
 name = "de0503_plugin_client_suffix-plugin_api_bad-sdk"
