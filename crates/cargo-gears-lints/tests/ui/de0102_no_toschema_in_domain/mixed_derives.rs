@@ -1,4 +1,5 @@
 // simulated_dir=/cyberfabric/modules/some_module/domain/
+#![allow(de0309_must_have_domain_model)]
 use utoipa::ToSchema;
 
 #[allow(dead_code)]

@@ -32,3 +32,4 @@ LL | | }
    = help: add #[domain_model] attribute to enforce DDD boundaries at compile time: use toolkit_macros::domain_model; #[domain_model] pub struct ...
 
 error: aborting due to 3 previous errors
+
