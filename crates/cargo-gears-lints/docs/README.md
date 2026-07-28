@@ -19,6 +19,7 @@ Index of per-lint documentation for `cargo-gears-lints`. Each lint's README live
 
 - [DE0301 - No Infra in Domain](../src/de03_domain_layer/de0301_no_infra_in_domain/README.md)
 - [DE0308 - No HTTP in Domain](../src/de03_domain_layer/de0308_no_http_in_domain/README.md)
+- [DE0309 - Must Have Domain Model](../src/de03_domain_layer/de0309_must_have_domain_model/README.md)
 
 ## DE05xx - Client Layer
 

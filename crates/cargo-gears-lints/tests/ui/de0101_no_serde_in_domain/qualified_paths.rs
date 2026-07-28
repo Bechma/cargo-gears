@@ -1,4 +1,5 @@
 // simulated_dir=/cyberfabric/modules/some_module/domain/
+#![allow(de0309_must_have_domain_model)]
 #[allow(dead_code)]
 // Should trigger DE0101 - Serde in domain
 #[derive(Debug, Clone, serde::Serialize)]

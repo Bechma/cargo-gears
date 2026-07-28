@@ -1,5 +1,6 @@
 // simulated_dir=/cyberfabric/modules/some_module/domain/
 #![allow(unused)]
+#![allow(de0309_must_have_domain_model)]
 
 mod api {
     pub mod rest {

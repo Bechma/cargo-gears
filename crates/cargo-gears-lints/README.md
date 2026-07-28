@@ -29,6 +29,7 @@ These rules are compiled by `cargo-gears-core`'s build script when the CLI is bu
 |------|------|------------------|
 | DE0301 | No Infra in Domain | Domain modules must not import infra crates (`cf_gears_toolkit_db`, `sea_orm`, etc.) |
 | DE0308 | No HTTP in Domain | Domain modules must not reference `http`, `axum`, or `hyper` types |
+| DE0309 | Must Have Domain Model | Externally-visible domain types must have `#[domain_model]` attribute |
 
 ### DE05xx — Client Layer
 

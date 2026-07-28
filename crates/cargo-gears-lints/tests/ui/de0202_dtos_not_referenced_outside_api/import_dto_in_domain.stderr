@@ -1,5 +1,5 @@
 error: api/rest type is missing required ToSchema derive (DE0204)
-  --> $DIR/import_dto_in_domain.rs:7:13
+  --> $DIR/import_dto_in_domain.rs:8:13
    |
 LL |             pub struct UserDto;
    |             ^^^^^^^^^^^^^^^^^^^
@@ -8,7 +8,7 @@ LL |             pub struct UserDto;
    = note: `#[deny(de0204_dtos_must_have_toschema_derive)]` on by default
 
 error: DTO type `UserDto` is defined outside of api/rest folder (DE0201)
-  --> $DIR/import_dto_in_domain.rs:7:13
+  --> $DIR/import_dto_in_domain.rs:8:13
    |
 LL |             pub struct UserDto;
    |             ^^^^^^^^^^^^^^^^^^
@@ -17,7 +17,7 @@ LL |             pub struct UserDto;
    = note: `#[deny(de0201_dtos_only_in_api_rest)]` on by default
 
 error: domain module imports infrastructure dependency `crate::api` (DE0301)
-  --> $DIR/import_dto_in_domain.rs:13:1
+  --> $DIR/import_dto_in_domain.rs:14:1
    |
 LL | use crate::api::rest::dto::UserDto;
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -26,7 +26,7 @@ LL | use crate::api::rest::dto::UserDto;
    = note: `#[deny(de0301_no_infra_in_domain)]` on by default
 
 error: domain module imports DTO type `UserDto` from api layer (DE0202)
-  --> $DIR/import_dto_in_domain.rs:13:1
+  --> $DIR/import_dto_in_domain.rs:14:1
    |
 LL | use crate::api::rest::dto::UserDto;
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
