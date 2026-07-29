@@ -8,3 +8,4 @@ LL | gts_value!("gts.cf.de0904.tests.type.v1~");
    = note: `#[deny(de0904_no_hardcoded_gts_prefix)]` on by default
 
 error: aborting due to 1 previous error
+

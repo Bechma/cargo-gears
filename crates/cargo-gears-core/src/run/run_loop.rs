@@ -13,6 +13,14 @@ pub(super) enum RunSignal {
     Stop,
 }
 
+/// Events received by the main watch-mode event loop.
+enum WatchEvent {
+    /// A file-system event from the watcher.
+    Fs(Result<notify::Event, notify::Error>),
+    /// The child process exited on its own (not killed by a signal).
+    ChildExited,
+}
+
 pub(super) struct RunLoop {
     generated_dir: PathBuf,
     workspace_path: PathBuf,
@@ -20,7 +28,7 @@ pub(super) struct RunLoop {
     project_name: String,
     manifest_path: PathBuf,
     watch_policy: WatchPolicy,
-    dependencies: Option<crate::gears_parser::CargoTomlDependencies>,
+    dependencies: crate::gears_parser::CargoTomlDependencies,
 }
 
 pub(super) static OTEL: AtomicBool = AtomicBool::new(false);
@@ -35,6 +43,7 @@ impl RunLoop {
         project_name: String,
         manifest_path: PathBuf,
         watch_policy: WatchPolicy,
+        dependencies: crate::gears_parser::CargoTomlDependencies,
     ) -> Self {
         Self {
             generated_dir,
@@ -43,29 +52,18 @@ impl RunLoop {
             project_name,
             manifest_path,
             watch_policy,
-            dependencies: None,
+            dependencies,
         }
-    }
-
-    pub(super) fn with_dependencies(
-        mut self,
-        dependencies: crate::gears_parser::CargoTomlDependencies,
-    ) -> Self {
-        self.dependencies = Some(dependencies);
-        self
     }
 
     pub(super) fn run(&self, watch: bool) -> anyhow::Result<RunSignal> {
         let workspace_path = &self.workspace_path;
-        let dependencies = self.dependencies.as_ref().map_or_else(
-            || common::get_config(workspace_path, &self.config_path)?.create_dependencies(),
-            |dependencies| Ok(dependencies.clone()),
-        )?;
+        let dependencies = &self.dependencies;
         common::generate_server_structure(
             workspace_path,
             &self.generated_dir,
             &self.project_name,
-            &dependencies,
+            dependencies,
         )?;
 
         let cargo_dir = common::generated_project_dir(&self.generated_dir, &self.project_name);
@@ -83,18 +81,21 @@ impl RunLoop {
         // -- watch mode --
 
         let (signal_tx, signal_rx) = mpsc::channel::<RunSignal>();
+        let (event_tx, event_rx) = mpsc::channel::<WatchEvent>();
 
         // Spawn cargo-run loop in a dedicated thread
         let cargo_dir_clone = cargo_dir;
         let config_path = self.config_path.clone();
+        let runner_tx = event_tx.clone();
         let runner_handle = std::thread::spawn(move || {
-            cargo_run_loop(&cargo_dir_clone, &config_path, &signal_rx);
+            cargo_run_loop(&cargo_dir_clone, &config_path, &signal_rx, &runner_tx);
         });
 
         // File-system watcher
-        let (fs_tx, fs_rx) = mpsc::channel();
-        let mut watcher =
-            notify::recommended_watcher(fs_tx).context("failed to create file watcher")?;
+        let mut watcher = notify::recommended_watcher(move |res| {
+            let _ = event_tx.send(WatchEvent::Fs(res));
+        })
+        .context("failed to create file watcher")?;
 
         let watch_plan = WatchPlan::from_policy(
             &self.watch_policy,
@@ -102,37 +103,48 @@ impl RunLoop {
                 workspace_path,
                 manifest_path: &self.manifest_path,
                 config_path: &self.config_path,
-                dependencies: &dependencies,
+                dependencies,
             },
         )?;
         watch_plan.watch(&mut watcher)?;
 
-        // Event loop - runs until the watcher channel closes
-        while let Ok(res_event) = fs_rx.recv() {
-            let event = match res_event {
-                Ok(event) => event,
-                Err(err) => {
-                    eprintln!("file watcher error: {err}");
-                    continue;
-                }
-            };
-
-            match watch_plan.action_for_event(&event)? {
-                Some(WatchAction::Regenerate) => {
-                    _ = signal_tx.send(RunSignal::Stop);
+        // Unified event loop: handles both file-system events and child-exit
+        // notifications through a single channel.
+        while let Ok(watch_event) = event_rx.recv() {
+            match watch_event {
+                WatchEvent::ChildExited => {
                     runner_handle
                         .join()
                         .map_err(|e| anyhow::anyhow!("runner thread panicked: {e:?}"))?;
-                    return Ok(RunSignal::Rerun);
+                    return Ok(RunSignal::Stop);
                 }
-                Some(WatchAction::Restart) => {
-                    _ = signal_tx.send(RunSignal::Rerun);
+                WatchEvent::Fs(res_event) => {
+                    let event = match res_event {
+                        Ok(event) => event,
+                        Err(err) => {
+                            eprintln!("file watcher error: {err}");
+                            continue;
+                        }
+                    };
+
+                    match watch_plan.action_for_event(&event)? {
+                        Some(WatchAction::Regenerate) => {
+                            _ = signal_tx.send(RunSignal::Stop);
+                            runner_handle
+                                .join()
+                                .map_err(|e| anyhow::anyhow!("runner thread panicked: {e:?}"))?;
+                            return Ok(RunSignal::Rerun);
+                        }
+                        Some(WatchAction::Restart) => {
+                            _ = signal_tx.send(RunSignal::Rerun);
+                        }
+                        None => {}
+                    }
                 }
-                None => {}
             }
         }
 
-        // Watcher channel closed - shut down the runner
+        // Event channel closed - shut down the runner
         _ = signal_tx.send(RunSignal::Stop);
         runner_handle
             .join()
@@ -149,7 +161,12 @@ fn cargo_run(path: &Path, config_path: &Path) -> anyhow::Result<Command> {
     common::cargo_command("run", path, config_path, otel, fips, release)
 }
 
-fn cargo_run_loop(cargo_dir: &Path, config_path: &Path, signal_rx: &mpsc::Receiver<RunSignal>) {
+fn cargo_run_loop(
+    cargo_dir: &Path,
+    config_path: &Path,
+    signal_rx: &mpsc::Receiver<RunSignal>,
+    event_tx: &mpsc::Sender<WatchEvent>,
+) {
     'outer: loop {
         let mut child = match cargo_run(cargo_dir, config_path)
             .and_then(|mut cmd| cmd.spawn().context("failed to spawn cargo run"))
@@ -157,10 +174,8 @@ fn cargo_run_loop(cargo_dir: &Path, config_path: &Path, signal_rx: &mpsc::Receiv
             Ok(child) => child,
             Err(e) => {
                 eprintln!("failed to spawn cargo run: {e}");
-                match signal_rx.recv() {
-                    Ok(RunSignal::Rerun) => continue 'outer,
-                    _ => return,
-                }
+                _ = event_tx.send(WatchEvent::ChildExited);
+                return;
             }
         };
 
@@ -210,10 +225,37 @@ fn cargo_run_loop(cargo_dir: &Path, config_path: &Path, signal_rx: &mpsc::Receiv
             continue 'outer;
         }
 
-        // Child exited on its own, wait for a signal before restarting
-        match signal_rx.recv() {
-            Ok(RunSignal::Rerun) => {}
-            _ => return,
-        }
+        // Child exited on its own - notify the main thread so it can
+        // break out of the event loop instead of blocking forever.
+        _ = event_tx.send(WatchEvent::ChildExited);
+        return;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Regression test: before the fix, when `cargo_run_loop` couldn't spawn a
+    /// child, it blocked on `signal_rx.recv()` forever. Now it sends
+    /// `ChildExited` and returns.
+    #[test]
+    fn runner_sends_child_exited_on_spawn_failure() {
+        let (_signal_tx, signal_rx) = mpsc::channel::<RunSignal>();
+        let (event_tx, event_rx) = mpsc::channel::<WatchEvent>();
+
+        // Non-existent directory causes spawn() to fail.
+        let cargo_dir = PathBuf::from("/nonexistent/cargo/dir");
+        let config_path = PathBuf::from("/nonexistent/config.yml");
+
+        let handle = std::thread::spawn(move || {
+            cargo_run_loop(&cargo_dir, &config_path, &signal_rx, &event_tx);
+        });
+
+        let event = event_rx
+            .recv_timeout(Duration::from_secs(5))
+            .expect("should receive ChildExited within timeout");
+        assert!(matches!(event, WatchEvent::ChildExited));
+        handle.join().expect("runner thread should not panic");
     }
 }

@@ -17,6 +17,8 @@ const MODULE_PREFIXES: &[&str] = &[
     "libs/",
     "modules/system/",
     "modules/",
+    "gears/system/",
+    "gears/",
     "examples/",
     "apps/",
     "plugins/",
