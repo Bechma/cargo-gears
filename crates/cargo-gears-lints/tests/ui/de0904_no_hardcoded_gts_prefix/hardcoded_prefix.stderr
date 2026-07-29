@@ -16,3 +16,4 @@ LL | const BUILT_ID: &str = concat!("gts.", "cf.core.users.user.v1~");
    = help: for example: gts_id!("cf.core.users.user.v1~")
 
 error: aborting due to 2 previous errors
+
