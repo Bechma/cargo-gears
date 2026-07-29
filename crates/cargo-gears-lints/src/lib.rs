@@ -24,6 +24,7 @@ mod de02_api_layer {
 mod de03_domain_layer {
     pub(crate) mod de0301_no_infra_in_domain;
     pub(crate) mod de0308_no_http_in_domain;
+    pub(crate) mod de0309_must_have_domain_model;
 }
 
 mod de05_client_layer {
@@ -46,6 +47,7 @@ mod de08_rest_api_conventions {
 mod de09_gts_layer {
     pub(crate) mod de0901_gts_string_pattern;
     pub(crate) mod de0902_no_schema_for_on_gts_structs;
+    pub(crate) mod de0904_no_hardcoded_gts_prefix;
 }
 
 mod de11_testing {
@@ -78,6 +80,7 @@ pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint
         de02_api_layer::de0204_dtos_must_have_toschema_derive::DE0204_DTOS_MUST_HAVE_TOSCHEMA_DERIVE,
         de03_domain_layer::de0301_no_infra_in_domain::DE0301_NO_INFRA_IN_DOMAIN,
         de03_domain_layer::de0308_no_http_in_domain::DE0308_NO_HTTP_IN_DOMAIN,
+        de03_domain_layer::de0309_must_have_domain_model::DE0309_MUST_HAVE_DOMAIN_MODEL,
         de05_client_layer::de0503_plugin_client_suffix::DE0503_PLUGIN_CLIENT_SUFFIX,
         de05_client_layer::de0504_client_versioning::DE0504_CLIENT_VERSIONING,
         de07_security::de0706_no_direct_sqlx::DE0706_NO_DIRECT_SQLX,
@@ -88,6 +91,7 @@ pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint
         de08_rest_api_conventions::de0803_api_snake_case::DE0803_API_SNAKE_CASE,
         de09_gts_layer::de0901_gts_string_pattern::DE0901_GTS_STRING_PATTERN,
         de09_gts_layer::de0902_no_schema_for_on_gts_structs::DE0902_NO_SCHEMA_FOR_ON_GTS_STRUCTS,
+        de09_gts_layer::de0904_no_hardcoded_gts_prefix::DE0904_NO_HARDCODED_GTS_PREFIX,
         de11_testing::de1101_tests_in_separate_files::DE1101_TESTS_IN_SEPARATE_FILES,
         de12_documentation::de1201_docs_rs_all_features::DE1201_DOCS_RS_ALL_FEATURES,
         de13_common_patterns::de1301_no_print_macros::DE1301_NO_PRINT_MACROS,
@@ -122,7 +126,13 @@ pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint
         Box::new(de09_gts_layer::de0901_gts_string_pattern::De0901GtsStringPattern::new())
     });
     lint_store.register_pre_expansion_pass(|| {
+        Box::new(de09_gts_layer::de0904_no_hardcoded_gts_prefix::De0904NoHardcodedGtsPrefix)
+    });
+    lint_store.register_pre_expansion_pass(|| {
         Box::new(de13_common_patterns::de1301_no_print_macros::De1301NoPrintMacros)
+    });
+    lint_store.register_pre_expansion_pass(|| {
+        Box::new(de03_domain_layer::de0309_must_have_domain_model::De0309MustHaveDomainModel)
     });
 
     lint_store.register_early_pass(|| {
@@ -215,6 +225,11 @@ mod tests {
         ("DE0301", "infra in domain", "de0301_no_infra_in_domain"),
         ("DE0308", "HTTP in domain", "de0308_no_http_in_domain"),
         (
+            "DE0309",
+            "domain_model attribute",
+            "de0309_must_have_domain_model",
+        ),
+        (
             "DE0503",
             "plugin client traits should use",
             "de0503_plugin_client_suffix",
@@ -239,6 +254,11 @@ mod tests {
             "DE0902",
             "schema_for on GTS struct",
             "de0902_no_schema_for_on_gts_structs",
+        ),
+        (
+            "DE0904",
+            "hard-coded GTS ID prefix",
+            "de0904_no_hardcoded_gts_prefix",
         ),
         (
             "DE1101",

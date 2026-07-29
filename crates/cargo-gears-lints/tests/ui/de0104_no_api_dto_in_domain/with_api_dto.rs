@@ -2,6 +2,7 @@
 #![feature(register_tool)]
 #![register_tool(cf_gears_toolkit_macros)]
 #![allow(dead_code)]
+#![allow(de0309_must_have_domain_model)]
 
 // Should trigger DE0104 - api_dto in domain
 #[cf_gears_toolkit_macros::api_dto(request, response)]

@@ -1,4 +1,4 @@
-// Test file for invalid schema_id in struct_to_gts_schema attributes
+#![allow(unknown_lints, de0904_no_hardcoded_gts_prefix)]
 
 use gts::GtsInstanceId;
 use gts_macros::struct_to_gts_schema;

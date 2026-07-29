@@ -3,6 +3,8 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
+use fixture_macros::domain_model;
+
 // Should not trigger DE0308 - HTTP in domain
 use std::sync::Arc;
 
@@ -10,6 +12,7 @@ use std::sync::Arc;
 use anyhow::Result;
 
 // Domain error enum - this is correct
+#[domain_model]
 pub enum DomainResult {
     Success,
     NotFound,
